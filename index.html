@@ -1,77 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Matrix</title>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-      }
-      canvas {
-        display: block;
-      }
-    </style>
+
   </head>
   <body>
-    <canvas id="matrix-canvas"></canvas>
-
-    <script>
-      window.onload = function () {
-        // Obtener el lienzo y el contexto del lienzo
-        const canvas = document.getElementById("matrix-canvas");
-        const ctx = canvas.getContext("2d");
-
-        // Establecer el tamaño del lienzo
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // Definir los caracteres y el tamaño de la matriz
-        const chars =
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        const charSize = 15;
-
-        // Calcular el número de columnas y filas
-        const columns = canvas.width / charSize;
-        const rows = canvas.height / charSize;
-
-        // Crear una matriz con los caracteres iniciales aleatorios
-        let matrix = [];
-        for (let i = 0; i < columns; i++) {
-          matrix[i] = Math.floor(Math.random() * rows) + 1;
-        }
-
-        // Función para actualizar y dibujar la matriz en cada cuadro
-        function drawMatrix() {
-          // Dibujar un fondo negro
-          ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Dibujar cada carácter de la matriz
-          ctx.fillStyle = "#00ff00";
-          ctx.font = `${charSize}px monospace`;
-          for (let i = 0; i < columns; i++) {
-            for (let j = 0; j < matrix[i]; j++) {
-              const char = chars[Math.floor(Math.random() * chars.length)];
-              ctx.fillText(char, i * charSize, j * charSize);
-            }
-            // Actualizar el valor de la matriz
-            if (Math.random() > 0.95) {
-              matrix[i] = Math.floor(Math.random() * rows) + 1;
-            } else if (matrix[i] > 0) {
-              matrix[i]--;
-            }
-          }
-        }
-
-        // Función para animar la matriz
-        function animateMatrix() {
-          drawMatrix();
-          requestAnimationFrame(animateMatrix);
-        }
-
-        // Iniciar la animación
-        animateMatrix();
-      };
-    </script>
+    <iframe src="https://gp2.omnitracs.online/"></iframe>
   </body>
 </html>
