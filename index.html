@@ -3,418 +3,132 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Matrix Rain (Single HTML)</title>
+  <title>Matrix Rain</title>
   <style>
-    :root{
-      --bg: #000;
-      --green: #00ff41;
-      --green2: #7CFF7C;
-      --ui: rgba(10, 25, 14, .72);
-      --ui-border: rgba(0,255,65,.28);
-      --text: rgba(220,255,230,.9);
+    html,body{margin:0;height:100%;background:#000;overflow:hidden}
+    canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+    /* ligero: scanlines + vignette muy baratos */
+    .scan{position:fixed;inset:0;pointer-events:none;opacity:.35;
+      background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 3px,rgba(0,0,0,.18) 4px);
+      mix-blend-mode:multiply;
     }
-
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: var(--bg);
-      overflow: hidden;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      display: block;
-      background: #000;
-    }
-
-    /* Overlays: scanlines, vignette, slight “glass” */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-    .scanlines {
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 0.00) 0px,
-          rgba(0, 0, 0, 0.00) 2px,
-          rgba(0, 0, 0, 0.08) 3px,
-          rgba(0, 0, 0, 0.18) 4px
-        );
-      opacity: .55;
-    }
-    .vignette {
-      background: radial-gradient(ellipse at center,
-        rgba(0,0,0,0.00) 0%,
-        rgba(0,0,0,0.12) 55%,
-        rgba(0,0,0,0.60) 100%);
-      opacity: .9;
-      mix-blend-mode: multiply;
-    }
-    .sheen {
-      background: linear-gradient(105deg,
-        rgba(0,255,65,0.00) 0%,
-        rgba(0,255,65,0.03) 35%,
-        rgba(0,255,65,0.00) 65%,
-        rgba(0,255,65,0.02) 100%);
-      opacity: .55;
-    }
-
-    /* UI panel */
-    #ui {
-      position: fixed;
-      left: 14px;
-      top: 14px;
-      width: min(360px, calc(100vw - 28px));
-      background: var(--ui);
-      border: 1px solid var(--ui-border);
-      border-radius: 16px;
-      color: var(--text);
-      padding: 12px 12px 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    #ui.hidden { display: none; }
-
-    #ui .title {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    #ui .title b { color: rgba(210,255,220,.95); letter-spacing: .3px; }
-    #ui .title small { opacity: .8; }
-    #ui .row {
-      display: grid;
-      grid-template-columns: 130px 1fr 52px;
-      align-items: center;
-      gap: 8px;
-      margin: 8px 0;
-      font-size: 13px;
-    }
-    #ui label { opacity: .92; }
-    #ui input[type="range"] { width: 100%; accent-color: var(--green); }
-    #ui .val {
-      text-align: right;
-      opacity: .9;
-      font-variant-numeric: tabular-nums;
-    }
-    #ui .hint {
-      margin-top: 10px;
-      font-size: 12px;
-      opacity: .78;
-      line-height: 1.35;
-    }
-    #ui kbd {
-      font: inherit;
-      padding: 1px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.25);
-      box-shadow: inset 0 0 0 1px rgba(0,255,65,.12);
-    }
-
-    /* Little corner fade to mimic CRT edges */
-    .edges {
-      position: fixed;
-      inset: 0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 0% 0%, rgba(0,0,0,.55), rgba(0,0,0,0) 38%),
-        radial-gradient(circle at 100% 0%, rgba(0,0,0,.55), rgba(0,0,0,0) 38%),
-        radial-gradient(circle at 0% 100%, rgba(0,0,0,.55), rgba(0,0,0,0) 38%),
-        radial-gradient(circle at 100% 100%, rgba(0,0,0,.55), rgba(0,0,0,0) 38%);
-      opacity: .65;
-      mix-blend-mode: multiply;
+    .vig{position:fixed;inset:0;pointer-events:none;opacity:.85;
+      background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0%,rgba(0,0,0,.18) 55%,rgba(0,0,0,.65) 100%);
+      mix-blend-mode:multiply;
     }
   </style>
 </head>
-
 <body>
-  <canvas id="c" aria-label="Matrix rain animation"></canvas>
-
-  <div class="overlay scanlines"></div>
-  <div class="overlay sheen"></div>
-  <div class="overlay vignette"></div>
-  <div class="edges"></div>
-
-  <div id="ui">
-    <div class="title">
-      <b>MATRIX RAIN</b>
-      <small><kbd>H</kbd> panel · <kbd>R</kbd> reset</small>
-    </div>
-
-    <div class="row">
-      <label for="font">Tamaño</label>
-      <input id="font" type="range" min="12" max="28" step="1" value="18" />
-      <div class="val" id="fontVal">18</div>
-    </div>
-
-    <div class="row">
-      <label for="speed">Velocidad</label>
-      <input id="speed" type="range" min="0.35" max="2.3" step="0.01" value="1.05" />
-      <div class="val" id="speedVal">1.05</div>
-    </div>
-
-    <div class="row">
-      <label for="density">Densidad</label>
-      <input id="density" type="range" min="0.35" max="1.25" step="0.01" value="0.92" />
-      <div class="val" id="densityVal">0.92</div>
-    </div>
-
-    <div class="row">
-      <label for="trail">Estela</label>
-      <input id="trail" type="range" min="0.03" max="0.16" step="0.001" value="0.075" />
-      <div class="val" id="trailVal">0.075</div>
-    </div>
-
-    <div class="row">
-      <label for="glow">Glow</label>
-      <input id="glow" type="range" min="0" max="28" step="1" value="12" />
-      <div class="val" id="glowVal">12</div>
-    </div>
-
-    <div class="hint">
-      Tip: sube <b>Densidad</b> y baja <b>Estela</b> para un look más “agresivo”.<br/>
-      Esto es una simulación (sin assets de la película).
-    </div>
-  </div>
+  <canvas id="c"></canvas>
+  <div class="scan"></div>
+  <div class="vig"></div>
 
   <script>
     (() => {
-      "use strict";
+      const c = document.getElementById("c");
+      const x = c.getContext("2d", { alpha: false });
 
-      const canvas = document.getElementById("c");
-      const ctx = canvas.getContext("2d", { alpha: false });
+      // Ajustes ligeros (sin UI)
+      let fontSize = 18;
+      let fade = 0.08;      // estela (alpha)
+      let speedBase = 1.15; // velocidad base
+      let dpr = 1, W = 0, H = 0, cols = 0;
 
-      // UI
-      const ui = document.getElementById("ui");
-      const $ = (id) => document.getElementById(id);
-      const sliders = {
-        font: $("font"), speed: $("speed"), density: $("density"), trail: $("trail"), glow: $("glow"),
-        fontVal: $("fontVal"), speedVal: $("speedVal"), densityVal: $("densityVal"), trailVal: $("trailVal"), glowVal: $("glowVal")
-      };
-
-      // Character set: Katakana + Latin + digits + symbols (Matrix-like vibe)
-      const katakanaStart = 0x30A0;
-      const katakanaEnd   = 0x30FF;
+      // Charset “Matrix-like”: katakana + dígitos + algo de latin/símbolos
       const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       const digits = "0123456789";
-      const symbols = "@#$%&*+=-~<>[]{}()";
+      const symbols = "@#$%&*+=-~<>[]{}";
+      const katakanaStart = 0x30A0, katakanaEnd = 0x30FF;
 
-      const rand = (a, b) => a + Math.random() * (b - a);
-      const rint = (a, b) => (a + Math.floor(Math.random() * (b - a + 1)));
+      const rint = (a,b)=>a+Math.floor(Math.random()*(b-a+1));
+      const rand = (a,b)=>a+Math.random()*(b-a);
 
-      function randomChar() {
-        // Weighted: mostly katakana, then digits/latin/symbols
+      function ch() {
         const p = Math.random();
-        if (p < 0.72) return String.fromCharCode(rint(katakanaStart, katakanaEnd));
-        if (p < 0.86) return digits[rint(0, digits.length - 1)];
-        if (p < 0.96) return latin[rint(0, latin.length - 1)];
-        return symbols[rint(0, symbols.length - 1)];
+        if (p < 0.75) return String.fromCharCode(rint(katakanaStart, katakanaEnd));
+        if (p < 0.88) return digits[rint(0, digits.length-1)];
+        if (p < 0.97) return latin[rint(0, latin.length-1)];
+        return symbols[rint(0, symbols.length-1)];
       }
 
-      // “Columns” state
-      let dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
-      let W = 0, H = 0;
-      let cols = 0;
-      let drops = [];       // y positions (float)
-      let speeds = [];      // per-column speed multiplier
-      let switches = [];    // how often a column swaps glyphs
-      let glyphCache = [];  // last glyph for each column
+      // Estado por columna
+      let y = [], v = [], g = [], sw = [];
 
-      // Settings (live)
-      const settings = {
-        fontSize: 18,
-        speed: 1.05,
-        density: 0.92,
-        trail: 0.075, // alpha of fade rect
-        glow: 12
-      };
+      function setup() {
+        dpr = Math.max(1, Math.min(2.5, devicePixelRatio || 1));
+        W = innerWidth|0; H = innerHeight|0;
+        c.width = (W * dpr)|0; c.height = (H * dpr)|0;
+        x.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Offscreen noise (light) for subtle texture
-      const noiseCanvas = document.createElement("canvas");
-      const nctx = noiseCanvas.getContext("2d", { alpha: true });
-      let noisePattern = null;
-      function rebuildNoise() {
-        const size = 96;
-        noiseCanvas.width = size;
-        noiseCanvas.height = size;
-        const img = nctx.createImageData(size, size);
-        for (let i = 0; i < img.data.length; i += 4) {
-          const v = rint(0, 255);
-          img.data[i] = v;
-          img.data[i + 1] = v;
-          img.data[i + 2] = v;
-          img.data[i + 3] = rint(0, 18); // very low alpha
-        }
-        nctx.putImageData(img, 0, 0);
-        noisePattern = ctx.createPattern(noiseCanvas, "repeat");
-      }
+        cols = Math.ceil(W / fontSize);
+        y = new Array(cols);
+        v = new Array(cols);
+        g = new Array(cols);
+        sw = new Array(cols);
 
-      function resize() {
-        dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
-        W = Math.floor(window.innerWidth);
-        H = Math.floor(window.innerHeight);
-
-        canvas.width = Math.floor(W * dpr);
-        canvas.height = Math.floor(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-        setupColumns();
-        rebuildNoise();
-      }
-
-      function setupColumns() {
-        cols = Math.ceil(W / settings.fontSize);
-        drops = new Array(cols);
-        speeds = new Array(cols);
-        switches = new Array(cols);
-        glyphCache = new Array(cols);
-
-        for (let i = 0; i < cols; i++) {
-          // Stagger start positions (some begin off-screen)
-          drops[i] = rand(-40, H / settings.fontSize);
-          speeds[i] = rand(0.65, 1.65);
-          switches[i] = rand(0.06, 0.22);
-          glyphCache[i] = randomChar();
+        for (let i=0;i<cols;i++){
+          // IMPORTANTE: caen de arriba hacia abajo => arrancan arriba (negativo)
+          y[i] = rand(-50, 0);
+          v[i] = rand(0.65, 1.7);
+          sw[i] = rand(0.06, 0.22);
+          g[i] = ch();
         }
 
-        ctx.font = `${settings.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-        ctx.textBaseline = "top";
+        x.font = `${fontSize}px ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace`;
+        x.textBaseline = "top";
       }
 
-      function setVal(el, v) { el.textContent = v; }
+      let last = performance.now();
+      function frame(t){
+        const dt = Math.min(0.05, (t-last)/1000); last = t;
 
-      function readUI() {
-        settings.fontSize = parseInt(sliders.font.value, 10);
-        settings.speed = parseFloat(sliders.speed.value);
-        settings.density = parseFloat(sliders.density.value);
-        settings.trail = parseFloat(sliders.trail.value);
-        settings.glow = parseInt(sliders.glow.value, 10);
+        // Fondeo con estela
+        x.globalCompositeOperation = "source-over";
+        x.fillStyle = `rgba(0,0,0,${fade})`;
+        x.fillRect(0,0,W,H);
 
-        setVal(sliders.fontVal, settings.fontSize);
-        setVal(sliders.speedVal, settings.speed.toFixed(2));
-        setVal(sliders.densityVal, settings.density.toFixed(2));
-        setVal(sliders.trailVal, settings.trail.toFixed(3));
-        setVal(sliders.glowVal, settings.glow);
+        // Glyphs (glow barato)
+        x.globalCompositeOperation = "lighter";
+        x.shadowColor = "rgba(0,255,65,.9)";
+        x.shadowBlur = 10;
 
-        // Changing font impacts layout
-        setupColumns();
-      }
+        const step = fontSize;
 
-      Object.values(sliders).forEach(el => {
-        if (el && el.tagName === "INPUT") el.addEventListener("input", readUI);
-      });
+        for (let i=0;i<cols;i++){
+          if (Math.random() < sw[i]) g[i] = ch();
 
-      // Toggle UI
-      window.addEventListener("keydown", (e) => {
-        if (e.key.toLowerCase() === "h") ui.classList.toggle("hidden");
-        if (e.key.toLowerCase() === "r") { setupColumns(); }
-      });
+          const px = i * step;
+          const py = (y[i]|0) * step;
 
-      // Animation
-      let lastT = performance.now();
+          // cabeza clara + cuerpo verde (simple pero efectivo)
+          x.fillStyle = "rgba(210,255,220,0.92)";
+          x.fillText(g[i], px, py);
+          x.fillStyle = "rgba(0,255,65,0.55)";
+          x.fillText(g[i], px + 0.2, py + 0.1);
 
-      function frame(t) {
-        const dt = Math.min(0.05, (t - lastT) / 1000); // clamp
-        lastT = t;
+          // bajar (arriba -> abajo)
+          y[i] += (speedBase * v[i]) * dt * 26;
 
-        // Fade the screen (trail)
-        // Using a very dark green-ish black keeps the vibe closer than pure black.
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = `rgba(0, 0, 0, ${settings.trail})`;
-        ctx.fillRect(0, 0, W, H);
-
-        // Subtle noise texture
-        if (noisePattern) {
-          ctx.save();
-          ctx.globalAlpha = 0.06;
-          ctx.fillStyle = noisePattern;
-          ctx.fillRect(0, 0, W, H);
-          ctx.restore();
-        }
-
-        // Draw glyphs
-        ctx.font = `${settings.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-        ctx.textBaseline = "top";
-
-        const font = settings.fontSize;
-        const maxY = Math.ceil(H / font) + 2;
-
-        ctx.shadowColor = "rgba(0,255,65,.9)";
-        ctx.shadowBlur = settings.glow;
-
-        // Slight additive pop for glow, but keep readable
-        ctx.globalCompositeOperation = "lighter";
-
-        for (let i = 0; i < cols; i++) {
-          // Density: skip some columns randomly to control fill
-          if (Math.random() > settings.density) continue;
-
-          // Possibly change glyph
-          if (Math.random() < switches[i]) glyphCache[i] = randomChar();
-          const ch = glyphCache[i];
-
-          const x = i * font;
-          const y = Math.floor(drops[i]) * font;
-
-          // “Head” highlight: bright and a bit whiter
-          // Body: green
-          // We draw head char once with brighter, then a dimmer char behind (subtle depth)
-          ctx.fillStyle = "rgba(205, 255, 220, 0.92)";
-          ctx.fillText(ch, x, y);
-
-          // A faint second pass of green gives that “phosphor” feel
-          ctx.fillStyle = "rgba(0, 255, 65, 0.55)";
-          ctx.fillText(ch, x + 0.25, y + 0.15);
-
-          // Advance drop
-          const base = (0.65 + speeds[i]) * settings.speed;
-          drops[i] += base * dt * 28; // tuned to feel “Matrix-fast” regardless of fps
-
-          // Reset when off-screen, with randomness for varied streams
-          if (drops[i] * font > H + rand(0, H * 0.35)) {
-            if (Math.random() < 0.975) {
-              drops[i] = rand(-40, -5);
-              speeds[i] = rand(0.65, 1.65);
-              switches[i] = rand(0.06, 0.22);
-            }
+          // reset cuando sale por abajo (vuelve arriba)
+          if (py > H + rand(0, H*0.35)){
+            y[i] = rand(-60, -5);
+            v[i] = rand(0.65, 1.7);
+            sw[i] = rand(0.06, 0.22);
+            g[i] = ch();
           }
 
-          // Occasionally “break” streams (gaps)
-          if (Math.random() < 0.0008) drops[i] -= rand(3, 18);
+          // micro “cortes” para huecos
+          if (Math.random() < 0.0007) y[i] -= rand(3, 16);
         }
 
-        // Restore normal composite
-        ctx.globalCompositeOperation = "source-over";
-        ctx.shadowBlur = 0;
+        x.shadowBlur = 0;
+        x.globalCompositeOperation = "source-over";
 
         requestAnimationFrame(frame);
       }
 
-      // Init
-      readUI();
-      resize();
-
-      // Handle resize with a small debounce
-      let resizeTimer = null;
-      window.addEventListener("resize", () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => resize(), 80);
-      });
-
-      // Periodically rebuild noise to keep it alive but cheap
-      setInterval(rebuildNoise, 900);
-
+      setup();
+      addEventListener("resize", () => setup(), { passive:true });
       requestAnimationFrame(frame);
     })();
   </script>
