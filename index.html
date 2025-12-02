@@ -118,10 +118,7 @@
       display:grid;
       gap:12px;
     }
-    .field{
-      display:grid;
-      gap:8px;
-    }
+    .field{ display:grid; gap:8px; }
     .labelrow{ display:flex; align-items:center; gap:10px; }
     label{ font-size:13px; color: rgba(235,255,245,.88); }
     .sub{
@@ -130,11 +127,7 @@
       color: var(--muted);
     }
 
-    .inputwrap{
-      display:flex;
-      gap:10px;
-      align-items:stretch;
-    }
+    .inputwrap{ display:flex; gap:10px; align-items:stretch; }
     .input{
       flex:1;
       display:flex;
@@ -187,10 +180,7 @@
       user-select:none;
     }
     .btn:active{ transform: translateY(1px); }
-    .btn:disabled{
-      opacity:.55; cursor:not-allowed;
-      filter:saturate(.7);
-    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; filter:saturate(.7); }
     .btn.secondary{
       background: rgba(0,0,0,.22);
       color: rgba(235,255,245,.88);
@@ -237,15 +227,9 @@
     .chip:active{ transform: translateY(1px); }
     .chip:hover{ background: rgba(0,0,0,.26); }
 
-    .side{
-      padding: 18px 18px 18px;
-      display:grid;
-      gap:12px;
-    }
+    .side{ padding: 18px 18px 18px; display:grid; gap:12px; }
     .side h3{ margin:0; font-size:14px; }
-    .list{
-      display:grid; gap:10px;
-    }
+    .list{ display:grid; gap:10px; }
     .item{
       border-radius: 16px;
       border: 1px solid rgba(90,255,160,.14);
@@ -254,13 +238,8 @@
       display:grid;
       gap:6px;
     }
-    .item .top{
-      display:flex; align-items:center; gap:10px;
-      justify-content:space-between;
-    }
-    .mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-    }
+    .item .top{ display:flex; align-items:center; gap:10px; justify-content:space-between; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
     .item .url{ color: rgba(235,255,245,.92); font-size:13px; }
     .item .meta{ color: var(--muted); font-size:12px; }
     .actions{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -322,8 +301,6 @@
       font-size: 11.5px;
       display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
     }
-    a{ color: rgba(170,255,220,.9); text-decoration:none; }
-    a:hover{ text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -332,7 +309,6 @@
 
   <main class="wrap">
     <section class="shell">
-      <!-- Left: Reserve -->
       <div class="card">
         <header>
           <div class="brand">
@@ -356,7 +332,8 @@
 
             <div class="inputwrap">
               <div class="input" role="group" aria-label="Entrada de handle">
-                <span class="prefix">example.com/u/</span>
+                <!-- CAMBIADO -->
+                <span class="prefix">omnione.qzz.io/u/</span>
                 <input id="handle" type="text" inputmode="text" autocomplete="off" spellcheck="false"
                        placeholder="neo" aria-describedby="help" />
               </div>
@@ -385,11 +362,10 @@
 
         <footer>
           <span>ⓘ Demo: la reserva se guarda en este navegador.</span>
-          <span class="mono" id="footHint">Tip: prueba nombres cortos 😉</span>
+          <span class="mono">Tip: prueba nombres cortos 😉</span>
         </footer>
       </div>
 
-      <!-- Right: My reservations -->
       <aside class="card">
         <div class="side">
           <h3>Mis reservas</h3>
@@ -425,18 +401,18 @@
       const btnText = el("btnText");
 
       const APP = {
-        baseUrl: "https://example.com/u/",
+        // CAMBIADO
+        baseUrl: "https://omnione.qzz.io/u/",
         storageKey: "fake_handle_reservations_v1",
-        ttlMs: 48 * 60 * 60 * 1000, // 48h (fake “hold”)
+        ttlMs: 48 * 60 * 60 * 1000,
         blocked: new Set([
           "admin","root","support","help","billing","contact","api","www","mail",
           "security","status","terms","privacy","login","signup","account","settings"
         ])
       };
 
-      let lastCheck = null; // { handle, available, reason, url }
+      let lastCheck = null;
 
-      // ---------------- Utilities ----------------
       const now = () => Date.now();
       const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -451,7 +427,6 @@
         return navigator.clipboard?.writeText(text)
           .then(() => true)
           .catch(() => {
-            // fallback
             const ta = document.createElement("textarea");
             ta.value = text;
             ta.style.position = "fixed";
@@ -465,13 +440,10 @@
       }
 
       function normalize(raw) {
-        // lower, trim, remove leading @, collapse spaces to hyphen
         let s = (raw ?? "").trim().toLowerCase();
         if (s.startsWith("@")) s = s.slice(1);
         s = s.replace(/\s+/g, "-");
-        // keep only allowed
         s = s.replace(/[^a-z0-9_-]/g, "");
-        // collapse repeated separators a bit
         s = s.replace(/-+/g, "-").replace(/_+/g, "_");
         return s;
       }
@@ -486,9 +458,7 @@
         return { ok:true, msg:"Formato correcto." };
       }
 
-      // deterministic “availability” for realism
       function hashStr(s) {
-        // simple FNV-1a-ish
         let h = 2166136261 >>> 0;
         for (let i = 0; i < s.length; i++) {
           h ^= s.charCodeAt(i);
@@ -501,8 +471,7 @@
         try {
           const raw = localStorage.getItem(APP.storageKey);
           const arr = raw ? JSON.parse(raw) : [];
-          if (!Array.isArray(arr)) return [];
-          return arr;
+          return Array.isArray(arr) ? arr : [];
         } catch { return []; }
       }
 
@@ -553,7 +522,6 @@
           const sug = `${base}${suffixes[i]}`;
           if (validate(sug).ok && !APP.blocked.has(sug) && !isTakenLocally(sug)) out.push(sug);
         }
-        // add a “dash” variant
         if (out.length < 6 && base.length <= 16) {
           const sug2 = `${base}-${(h % 97) + 2}`;
           if (validate(sug2).ok && !APP.blocked.has(sug2) && !isTakenLocally(sug2)) out.unshift(sug2);
@@ -587,10 +555,7 @@
       }
 
       function renderList() {
-        const items = loadReservations()
-          .sort((a,b) => b.createdAt - a.createdAt);
-
-        // clean expired silently
+        const items = loadReservations().sort((a,b) => b.createdAt - a.createdAt);
         const fresh = items.filter(it => it.expiresAt > now());
         if (fresh.length !== items.length) saveReservations(fresh);
 
@@ -646,7 +611,6 @@
             const all = loadReservations().filter(x => x.code !== it.code);
             saveReservations(all);
             renderList();
-            // If user had this selected, reset UI
             if (lastCheck?.handle === it.handle) {
               lastCheck = null;
               btnReserve.disabled = true;
@@ -666,32 +630,23 @@
         return `RSV-${part(h,4)}-${part((h>>>5),4)}-${part((h>>>11),4)}`;
       }
 
-      // ---------------- Main flows ----------------
       async function checkAvailability() {
         const raw = input.value;
         const handle = normalize(raw);
-        if (handle !== raw.trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"-")) {
-          // quietly normalize in the box (feels like backend sanitization)
-          input.value = handle;
-        }
+        if (handle !== raw.trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"-")) input.value = handle;
 
         const v = validate(handle);
-        renderSuggestions([]); // hide
+        renderSuggestions([]);
         btnReserve.disabled = true;
         btnCopy.disabled = true;
         lastCheck = null;
 
-        if (!v.ok) {
-          setStatus("bad","Nombre inválido", v.msg);
-          return;
-        }
+        if (!v.ok) { setStatus("bad","Nombre inválido", v.msg); return; }
 
         setBusy(true);
         setStatus("warn","Consultando disponibilidad…", "Conectando con el registro de nombres…");
-        // Fake latency: feels real
         await sleep(450 + Math.random() * 650);
 
-        // local taken
         if (isTakenLocally(handle)) {
           setBusy(false);
           setStatus("bad","No disponible", "Ese nombre ya está <b>reservado</b> (en este demo). Prueba una sugerencia.");
@@ -699,7 +654,6 @@
           return;
         }
 
-        // blocked
         if (APP.blocked.has(handle)) {
           setBusy(false);
           setStatus("bad","No disponible", "Ese nombre está <b>restringido</b>. Prueba una sugerencia.");
@@ -707,7 +661,6 @@
           return;
         }
 
-        // premium-ish “taken” for very short names (adds realism)
         if (handle.length <= 4 && (hashStr(handle) % 3 === 0)) {
           setBusy(false);
           setStatus("bad","Nombre premium ocupado", "Los nombres muy cortos suelen estar tomados. Prueba una variante.");
@@ -715,9 +668,8 @@
           return;
         }
 
-        // deterministic random availability
         const h = hashStr(handle);
-        const available = (h % 7) !== 0; // ~85% available
+        const available = (h % 7) !== 0;
         setBusy(false);
 
         const url = makeUrl(handle);
@@ -727,7 +679,7 @@
           return;
         }
 
-        lastCheck = { handle, available:true, reason:"ok", url };
+        lastCheck = { handle, available:true, url };
         setStatus("ok","Disponible ✅", `Perfecto. Tu URL será <span class="mono">${url}</span>`);
         btnReserve.disabled = false;
         btnCopy.disabled = false;
@@ -736,8 +688,8 @@
 
       function reserveNow() {
         if (!lastCheck?.available) return;
-
         const handle = lastCheck.handle;
+
         if (isTakenLocally(handle)) {
           setStatus("bad","Ups…", "Acaba de quedar reservado. Vuelve a verificar.");
           btnReserve.disabled = true;
@@ -747,13 +699,7 @@
         const code = genCode(handle);
         const items = loadReservations();
 
-        items.unshift({
-          handle,
-          code,
-          createdAt: now(),
-          expiresAt: now() + APP.ttlMs
-        });
-
+        items.unshift({ handle, code, createdAt: now(), expiresAt: now() + APP.ttlMs });
         saveReservations(items);
         renderList();
 
@@ -762,11 +708,9 @@
         showToast("Reserva creada ✅");
       }
 
-      // ---------------- Events ----------------
       btnCheck.addEventListener("click", checkAvailability);
 
       btnReserve.addEventListener("click", () => {
-        // Fake “processing” feel
         btnReserve.disabled = true;
         showToast("Procesando…");
         setTimeout(() => reserveNow(), 350 + Math.random() * 450);
@@ -785,7 +729,7 @@
         const v = validate(handle);
         lastCheck = null;
         btnReserve.disabled = true;
-        btnCopy.disabled = validate(handle).ok ? false : true;
+        btnCopy.disabled = !v.ok;
         renderSuggestions([]);
         if (!handle) setStatus("warn","Listo para verificar","Escribe un nombre y presiona <b>Verificar</b>.");
         else if (!v.ok) setStatus("bad","Nombre inválido", v.msg);
@@ -796,12 +740,9 @@
         if (e.key === "Enter") checkAvailability();
       });
 
-      // Init
       renderList();
       setStatus("warn","Listo para verificar","Escribe un nombre y presiona <b>Verificar</b>.");
       input.focus();
-
-      // Refresh list countdown (light)
       setInterval(() => renderList(), 30_000);
     })();
   </script>
