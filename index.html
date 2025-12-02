@@ -3,133 +3,806 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Matrix Rain</title>
+  <title>Reserva tu nombre/URL</title>
+  <meta name="color-scheme" content="dark">
   <style>
-    html,body{margin:0;height:100%;background:#000;overflow:hidden}
-    canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
-    /* ligero: scanlines + vignette muy baratos */
-    .scan{position:fixed;inset:0;pointer-events:none;opacity:.35;
-      background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 3px,rgba(0,0,0,.18) 4px);
+    :root{
+      --bg0:#070a08;
+      --bg1:#0a120d;
+      --card: rgba(11, 22, 16, .65);
+      --border: rgba(90, 255, 160, .18);
+      --text: rgba(235,255,245,.92);
+      --muted: rgba(220,255,235,.65);
+      --green:#2CFF8B;
+      --green2:#9CFFD0;
+      --danger:#ff5f6d;
+      --warn:#ffd66e;
+      --shadow: 0 18px 50px rgba(0,0,0,.55);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(44,255,139,.15), transparent 55%),
+        radial-gradient(800px 520px at 80% 40%, rgba(156,255,208,.08), transparent 60%),
+        radial-gradient(700px 500px at 50% 90%, rgba(44,255,139,.08), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    .grid {
+      position:fixed; inset:0;
+      background:
+        linear-gradient(to right, rgba(44,255,139,.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(44,255,139,.04) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1), rgba(0,0,0,.2) 55%, rgba(0,0,0,0) 85%);
+      pointer-events:none;
+      opacity:.35;
+    }
+    .vignette{
+      position:fixed; inset:0; pointer-events:none;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,.22) 55%, rgba(0,0,0,.68) 100%);
       mix-blend-mode:multiply;
     }
-    .vig{position:fixed;inset:0;pointer-events:none;opacity:.85;
-      background:radial-gradient(ellipse at center,rgba(0,0,0,0) 0%,rgba(0,0,0,.18) 55%,rgba(0,0,0,.65) 100%);
-      mix-blend-mode:multiply;
+
+    .wrap{ min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .shell{ width:min(980px, 100%); display:grid; gap:16px; grid-template-columns: 1.15fr .85fr; }
+    @media (max-width: 920px){ .shell{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow:hidden;
+      position:relative;
     }
+    .card::before{
+      content:"";
+      position:absolute; inset:-1px;
+      background: radial-gradient(650px 240px at 18% 8%, rgba(44,255,139,.20), transparent 60%);
+      pointer-events:none;
+      opacity:.9;
+    }
+    .card > *{ position:relative; }
+
+    header{
+      padding:22px 22px 14px;
+      border-bottom: 1px solid rgba(90,255,160,.10);
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      letter-spacing:.2px;
+    }
+    .dot{
+      width:12px; height:12px; border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #d6ffe9, var(--green));
+      box-shadow: 0 0 0 6px rgba(44,255,139,.10), 0 0 24px rgba(44,255,139,.25);
+    }
+    .brand h1{
+      font-size:16px; margin:0; font-weight:700;
+      color: rgba(235,255,245,.95);
+    }
+    .brand span{
+      font-size:12px; color: var(--muted);
+      margin-left:auto;
+      border:1px solid rgba(90,255,160,.16);
+      padding:6px 10px; border-radius:999px;
+      background: rgba(0,0,0,.18);
+    }
+    .hero{
+      padding:18px 22px 8px;
+    }
+    .hero h2{
+      margin:0 0 10px;
+      font-size:28px;
+      line-height:1.08;
+      letter-spacing:-.5px;
+    }
+    .hero p{
+      margin:0;
+      color: var(--muted);
+      line-height:1.45;
+      max-width: 58ch;
+      font-size:14px;
+    }
+
+    .form{
+      padding:18px 22px 22px;
+      display:grid;
+      gap:12px;
+    }
+    .field{
+      display:grid;
+      gap:8px;
+    }
+    .labelrow{ display:flex; align-items:center; gap:10px; }
+    label{ font-size:13px; color: rgba(235,255,245,.88); }
+    .sub{
+      margin-left:auto;
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    .inputwrap{
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+    }
+    .input{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(90,255,160,.18);
+      background: rgba(0,0,0,.26);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.2);
+    }
+    .prefix{
+      color: rgba(220,255,235,.65);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:13px;
+      padding:6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(90,255,160,.12);
+      background: rgba(0,0,0,.18);
+      white-space:nowrap;
+    }
+    input[type="text"]{
+      width:100%;
+      border:0;
+      outline:none;
+      background: transparent;
+      color: rgba(235,255,245,.95);
+      font-size:15px;
+      letter-spacing:.2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+    input::placeholder{ color: rgba(220,255,235,.35); }
+
+    .btn{
+      border:0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      letter-spacing:.2px;
+      cursor:pointer;
+      color: rgba(0,0,0,.88);
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      box-shadow: 0 10px 26px rgba(44,255,139,.18);
+      min-width: 152px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      transition: transform .08s ease, filter .12s ease, opacity .12s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn:disabled{
+      opacity:.55; cursor:not-allowed;
+      filter:saturate(.7);
+    }
+    .btn.secondary{
+      background: rgba(0,0,0,.22);
+      color: rgba(235,255,245,.88);
+      border:1px solid rgba(90,255,160,.18);
+      box-shadow:none;
+      min-width: unset;
+    }
+
+    .status{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(90,255,160,.14);
+      background: rgba(0,0,0,.18);
+    }
+    .status .pill{
+      width:10px; height:10px; border-radius:999px;
+      margin-top:4px;
+      box-shadow: 0 0 0 6px rgba(44,255,139,.08);
+      flex: 0 0 auto;
+    }
+    .status .txt{ display:grid; gap:2px; }
+    .status .txt b{ font-size:13px; }
+    .status .txt span{ font-size:12px; color: var(--muted); line-height:1.35; }
+
+    .ok .pill{ background: var(--green); }
+    .warn .pill{ background: var(--warn); box-shadow: 0 0 0 6px rgba(255,214,110,.10); }
+    .bad .pill{ background: var(--danger); box-shadow: 0 0 0 6px rgba(255,95,109,.10); }
+
+    .minirow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .chip{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(90,255,160,.16);
+      background: rgba(0,0,0,.18);
+      color: rgba(220,255,235,.82);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease, background .12s ease;
+    }
+    .chip:active{ transform: translateY(1px); }
+    .chip:hover{ background: rgba(0,0,0,.26); }
+
+    .side{
+      padding: 18px 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    .side h3{ margin:0; font-size:14px; }
+    .list{
+      display:grid; gap:10px;
+    }
+    .item{
+      border-radius: 16px;
+      border: 1px solid rgba(90,255,160,.14);
+      background: rgba(0,0,0,.18);
+      padding: 12px;
+      display:grid;
+      gap:6px;
+    }
+    .item .top{
+      display:flex; align-items:center; gap:10px;
+      justify-content:space-between;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+    .item .url{ color: rgba(235,255,245,.92); font-size:13px; }
+    .item .meta{ color: var(--muted); font-size:12px; }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .actions button{
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(90,255,160,.16);
+      background: rgba(0,0,0,.22);
+      color: rgba(235,255,245,.86);
+      cursor:pointer;
+      font-weight:700;
+      font-size:12px;
+    }
+    .actions button.danger{
+      border-color: rgba(255,95,109,.22);
+      background: rgba(255,95,109,.10);
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.60);
+      border: 1px solid rgba(90,255,160,.18);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: rgba(235,255,245,.92);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      max-width: min(720px, calc(100vw - 20px));
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toast.show{
+      opacity:1;
+      transform: translateX(-50%) translateY(-4px);
+      pointer-events:auto;
+    }
+    .spinner{
+      width:14px;height:14px;border-radius:999px;
+      border:2px solid rgba(220,255,235,.28);
+      border-top-color: rgba(44,255,139,.9);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    footer{
+      padding: 0 22px 18px;
+      color: rgba(220,255,235,.50);
+      font-size: 11.5px;
+      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    a{ color: rgba(170,255,220,.9); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
-  <div class="scan"></div>
-  <div class="vig"></div>
+  <div class="grid"></div>
+  <div class="vignette"></div>
+
+  <main class="wrap">
+    <section class="shell">
+      <!-- Left: Reserve -->
+      <div class="card">
+        <header>
+          <div class="brand">
+            <div class="dot" aria-hidden="true"></div>
+            <h1>Panel de reserva</h1>
+            <span>Registro en 30s</span>
+          </div>
+        </header>
+
+        <div class="hero">
+          <h2>Reserva tu nombre/URL antes de que alguien más lo tome.</h2>
+          <p>Elige tu <span class="mono">@handle</span> y te guardamos la URL. Se siente “real” porque simula validación, disponibilidad y confirmación con folio.</p>
+        </div>
+
+        <div class="form">
+          <div class="field">
+            <div class="labelrow">
+              <label for="handle">Tu handle</label>
+              <div class="sub">3–20 · letras/números · “_” o “-”</div>
+            </div>
+
+            <div class="inputwrap">
+              <div class="input" role="group" aria-label="Entrada de handle">
+                <span class="prefix">example.com/u/</span>
+                <input id="handle" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+                       placeholder="neo" aria-describedby="help" />
+              </div>
+              <button class="btn" id="btnCheck" type="button">
+                <span class="spinner" id="spin" style="display:none"></span>
+                <span id="btnText">Verificar</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="status" class="status warn" aria-live="polite">
+            <div class="pill"></div>
+            <div class="txt">
+              <b>Listo para verificar</b>
+              <span id="help">Escribe un nombre y presiona <b>Verificar</b>.</span>
+            </div>
+          </div>
+
+          <div class="minirow" id="suggestions" style="display:none" aria-label="Sugerencias"></div>
+
+          <div class="minirow">
+            <button class="btn secondary" id="btnReserve" type="button" disabled>Reservar ahora</button>
+            <button class="btn secondary" id="btnCopy" type="button" disabled>Copiar URL</button>
+          </div>
+        </div>
+
+        <footer>
+          <span>ⓘ Demo: la reserva se guarda en este navegador.</span>
+          <span class="mono" id="footHint">Tip: prueba nombres cortos 😉</span>
+        </footer>
+      </div>
+
+      <!-- Right: My reservations -->
+      <aside class="card">
+        <div class="side">
+          <h3>Mis reservas</h3>
+          <div class="list" id="list"></div>
+          <div class="status" style="border-style:dashed">
+            <div class="pill" style="background: rgba(220,255,235,.55); box-shadow:none;"></div>
+            <div class="txt">
+              <b>¿Qué pasa “después”?</b>
+              <span>Tu web real luego puede validar esto en backend. Aquí se simula para que parezca registro real.</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     (() => {
-      const c = document.getElementById("c");
-      const x = c.getContext("2d", { alpha: false });
+      const el = (id) => document.getElementById(id);
 
-      // Ajustes ligeros (sin UI)
-      let fontSize = 18;
-      let fade = 0.08;      // estela (alpha)
-      let speedBase = 1.15; // velocidad base
-      let dpr = 1, W = 0, H = 0, cols = 0;
+      const input = el("handle");
+      const btnCheck = el("btnCheck");
+      const btnReserve = el("btnReserve");
+      const btnCopy = el("btnCopy");
+      const statusBox = el("status");
+      const help = el("help");
+      const list = el("list");
+      const suggestions = el("suggestions");
+      const toast = el("toast");
+      const spin = el("spin");
+      const btnText = el("btnText");
 
-      // Charset “Matrix-like”: katakana + dígitos + algo de latin/símbolos
-      const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      const digits = "0123456789";
-      const symbols = "@#$%&*+=-~<>[]{}";
-      const katakanaStart = 0x30A0, katakanaEnd = 0x30FF;
+      const APP = {
+        baseUrl: "https://example.com/u/",
+        storageKey: "fake_handle_reservations_v1",
+        ttlMs: 48 * 60 * 60 * 1000, // 48h (fake “hold”)
+        blocked: new Set([
+          "admin","root","support","help","billing","contact","api","www","mail",
+          "security","status","terms","privacy","login","signup","account","settings"
+        ])
+      };
 
-      const rint = (a,b)=>a+Math.floor(Math.random()*(b-a+1));
-      const rand = (a,b)=>a+Math.random()*(b-a);
+      let lastCheck = null; // { handle, available, reason, url }
 
-      function ch() {
-        const p = Math.random();
-        if (p < 0.75) return String.fromCharCode(rint(katakanaStart, katakanaEnd));
-        if (p < 0.88) return digits[rint(0, digits.length-1)];
-        if (p < 0.97) return latin[rint(0, latin.length-1)];
-        return symbols[rint(0, symbols.length-1)];
+      // ---------------- Utilities ----------------
+      const now = () => Date.now();
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => toast.classList.remove("show"), 1900);
       }
 
-      // Estado por columna
-      let y = [], v = [], g = [], sw = [];
+      function safeCopy(text) {
+        return navigator.clipboard?.writeText(text)
+          .then(() => true)
+          .catch(() => {
+            // fallback
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); } catch {}
+            document.body.removeChild(ta);
+            return true;
+          });
+      }
 
-      function setup() {
-        dpr = Math.max(1, Math.min(2.5, devicePixelRatio || 1));
-        W = innerWidth|0; H = innerHeight|0;
-        c.width = (W * dpr)|0; c.height = (H * dpr)|0;
-        x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      function normalize(raw) {
+        // lower, trim, remove leading @, collapse spaces to hyphen
+        let s = (raw ?? "").trim().toLowerCase();
+        if (s.startsWith("@")) s = s.slice(1);
+        s = s.replace(/\s+/g, "-");
+        // keep only allowed
+        s = s.replace(/[^a-z0-9_-]/g, "");
+        // collapse repeated separators a bit
+        s = s.replace(/-+/g, "-").replace(/_+/g, "_");
+        return s;
+      }
 
-        cols = Math.ceil(W / fontSize);
-        y = new Array(cols);
-        v = new Array(cols);
-        g = new Array(cols);
-        sw = new Array(cols);
+      function validate(handle) {
+        if (!handle) return { ok:false, msg:"Escribe un nombre para tu URL." };
+        if (handle.length < 3) return { ok:false, msg:"Muy corto. Mínimo 3 caracteres." };
+        if (handle.length > 20) return { ok:false, msg:"Muy largo. Máximo 20 caracteres." };
+        if (!/^[a-z0-9]/.test(handle)) return { ok:false, msg:"Debe iniciar con letra o número." };
+        if (!/[a-z0-9]$/.test(handle)) return { ok:false, msg:"Debe terminar con letra o número." };
+        if (/__|--|_-|-_/.test(handle)) return { ok:false, msg:"Evita separadores repetidos (__, --, _-, -_)." };
+        return { ok:true, msg:"Formato correcto." };
+      }
 
-        for (let i=0;i<cols;i++){
-          // IMPORTANTE: caen de arriba hacia abajo => arrancan arriba (negativo)
-          y[i] = rand(-50, 0);
-          v[i] = rand(0.65, 1.7);
-          sw[i] = rand(0.06, 0.22);
-          g[i] = ch();
+      // deterministic “availability” for realism
+      function hashStr(s) {
+        // simple FNV-1a-ish
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+          h ^= s.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      function loadReservations() {
+        try {
+          const raw = localStorage.getItem(APP.storageKey);
+          const arr = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(arr)) return [];
+          return arr;
+        } catch { return []; }
+      }
+
+      function saveReservations(arr) {
+        localStorage.setItem(APP.storageKey, JSON.stringify(arr));
+      }
+
+      function isTakenLocally(handle) {
+        const items = loadReservations();
+        return items.some(it => it.handle === handle && (it.expiresAt > now()));
+      }
+
+      function humanRemaining(ms) {
+        if (ms <= 0) return "Expirada";
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const h = Math.floor(m / 60);
+        const d = Math.floor(h / 24);
+        const hh = h % 24;
+        const mm = m % 60;
+        if (d > 0) return `Expira en ${d}d ${hh}h`;
+        if (h > 0) return `Expira en ${h}h ${mm}m`;
+        return `Expira en ${m}m`;
+      }
+
+      function setStatus(kind, title, desc) {
+        statusBox.classList.remove("ok","warn","bad");
+        statusBox.classList.add(kind);
+        statusBox.querySelector("b").textContent = title;
+        help.innerHTML = desc;
+      }
+
+      function setBusy(b) {
+        btnCheck.disabled = b;
+        spin.style.display = b ? "inline-block" : "none";
+        btnText.textContent = b ? "Verificando..." : "Verificar";
+      }
+
+      function makeUrl(handle) {
+        return APP.baseUrl + handle;
+      }
+
+      function makeSuggestions(base) {
+        const out = [];
+        const h = hashStr(base);
+        const suffixes = [1,2,3,7,8,9,11,13];
+        for (let i = 0; i < suffixes.length && out.length < 6; i++) {
+          const sug = `${base}${suffixes[i]}`;
+          if (validate(sug).ok && !APP.blocked.has(sug) && !isTakenLocally(sug)) out.push(sug);
+        }
+        // add a “dash” variant
+        if (out.length < 6 && base.length <= 16) {
+          const sug2 = `${base}-${(h % 97) + 2}`;
+          if (validate(sug2).ok && !APP.blocked.has(sug2) && !isTakenLocally(sug2)) out.unshift(sug2);
+        }
+        return out.slice(0,6);
+      }
+
+      function renderSuggestions(handles) {
+        suggestions.innerHTML = "";
+        if (!handles.length) {
+          suggestions.style.display = "none";
+          return;
+        }
+        suggestions.style.display = "flex";
+        handles.forEach(h => {
+          const chip = document.createElement("div");
+          chip.className = "chip mono";
+          chip.textContent = h;
+          chip.title = "Usar esta sugerencia";
+          chip.addEventListener("click", () => {
+            input.value = h;
+            lastCheck = null;
+            btnReserve.disabled = true;
+            btnCopy.disabled = true;
+            suggestions.style.display = "none";
+            setStatus("warn","Listo para verificar", "Pulsa <b>Verificar</b> para confirmar disponibilidad.");
+            input.focus();
+          });
+          suggestions.appendChild(chip);
+        });
+      }
+
+      function renderList() {
+        const items = loadReservations()
+          .sort((a,b) => b.createdAt - a.createdAt);
+
+        // clean expired silently
+        const fresh = items.filter(it => it.expiresAt > now());
+        if (fresh.length !== items.length) saveReservations(fresh);
+
+        list.innerHTML = "";
+        if (!fresh.length) {
+          const empty = document.createElement("div");
+          empty.className = "item";
+          empty.innerHTML = `
+            <div class="top">
+              <div class="mono url">@—</div>
+              <div class="meta">Sin reservas todavía</div>
+            </div>
+            <div class="meta">Cuando reserves un nombre, aparecerá aquí.</div>
+          `;
+          list.appendChild(empty);
+          return;
         }
 
-        x.font = `${fontSize}px ui-monospace, Menlo, Monaco, Consolas, "Courier New", monospace`;
-        x.textBaseline = "top";
+        fresh.forEach(it => {
+          const row = document.createElement("div");
+          row.className = "item";
+          const url = makeUrl(it.handle);
+          const remaining = humanRemaining(it.expiresAt - now());
+          row.innerHTML = `
+            <div class="top">
+              <div class="mono url">@${it.handle}</div>
+              <div class="meta">${remaining}</div>
+            </div>
+            <div class="mono meta">${url}</div>
+            <div class="meta">Folio: <span class="mono">${it.code}</span></div>
+            <div class="actions">
+              <button data-act="copy">Copiar</button>
+              <button data-act="renew">Renovar</button>
+              <button class="danger" data-act="release">Liberar</button>
+            </div>
+          `;
+          row.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+            await safeCopy(url);
+            showToast("URL copiada ✅");
+          });
+          row.querySelector('[data-act="renew"]').addEventListener("click", () => {
+            const all = loadReservations();
+            const idx = all.findIndex(x => x.code === it.code);
+            if (idx >= 0) {
+              all[idx].createdAt = now();
+              all[idx].expiresAt = now() + APP.ttlMs;
+              saveReservations(all);
+              renderList();
+              showToast("Reserva renovada 🔁");
+            }
+          });
+          row.querySelector('[data-act="release"]').addEventListener("click", () => {
+            const all = loadReservations().filter(x => x.code !== it.code);
+            saveReservations(all);
+            renderList();
+            // If user had this selected, reset UI
+            if (lastCheck?.handle === it.handle) {
+              lastCheck = null;
+              btnReserve.disabled = true;
+              btnCopy.disabled = true;
+              setStatus("warn","Listo para verificar", "Escribe un nombre y presiona <b>Verificar</b>.");
+            }
+            showToast("Reserva liberada 🗑️");
+          });
+
+          list.appendChild(row);
+        });
       }
 
-      let last = performance.now();
-      function frame(t){
-        const dt = Math.min(0.05, (t-last)/1000); last = t;
+      function genCode(handle) {
+        const h = hashStr(handle + String(now()));
+        const part = (n, len) => n.toString(36).toUpperCase().padStart(len, "0").slice(0,len);
+        return `RSV-${part(h,4)}-${part((h>>>5),4)}-${part((h>>>11),4)}`;
+      }
 
-        // Fondeo con estela
-        x.globalCompositeOperation = "source-over";
-        x.fillStyle = `rgba(0,0,0,${fade})`;
-        x.fillRect(0,0,W,H);
-
-        // Glyphs (glow barato)
-        x.globalCompositeOperation = "lighter";
-        x.shadowColor = "rgba(0,255,65,.9)";
-        x.shadowBlur = 10;
-
-        const step = fontSize;
-
-        for (let i=0;i<cols;i++){
-          if (Math.random() < sw[i]) g[i] = ch();
-
-          const px = i * step;
-          const py = (y[i]|0) * step;
-
-          // cabeza clara + cuerpo verde (simple pero efectivo)
-          x.fillStyle = "rgba(210,255,220,0.92)";
-          x.fillText(g[i], px, py);
-          x.fillStyle = "rgba(0,255,65,0.55)";
-          x.fillText(g[i], px + 0.2, py + 0.1);
-
-          // bajar (arriba -> abajo)
-          y[i] += (speedBase * v[i]) * dt * 26;
-
-          // reset cuando sale por abajo (vuelve arriba)
-          if (py > H + rand(0, H*0.35)){
-            y[i] = rand(-60, -5);
-            v[i] = rand(0.65, 1.7);
-            sw[i] = rand(0.06, 0.22);
-            g[i] = ch();
-          }
-
-          // micro “cortes” para huecos
-          if (Math.random() < 0.0007) y[i] -= rand(3, 16);
+      // ---------------- Main flows ----------------
+      async function checkAvailability() {
+        const raw = input.value;
+        const handle = normalize(raw);
+        if (handle !== raw.trim().toLowerCase().replace(/^@/,"").replace(/\s+/g,"-")) {
+          // quietly normalize in the box (feels like backend sanitization)
+          input.value = handle;
         }
 
-        x.shadowBlur = 0;
-        x.globalCompositeOperation = "source-over";
+        const v = validate(handle);
+        renderSuggestions([]); // hide
+        btnReserve.disabled = true;
+        btnCopy.disabled = true;
+        lastCheck = null;
 
-        requestAnimationFrame(frame);
+        if (!v.ok) {
+          setStatus("bad","Nombre inválido", v.msg);
+          return;
+        }
+
+        setBusy(true);
+        setStatus("warn","Consultando disponibilidad…", "Conectando con el registro de nombres…");
+        // Fake latency: feels real
+        await sleep(450 + Math.random() * 650);
+
+        // local taken
+        if (isTakenLocally(handle)) {
+          setBusy(false);
+          setStatus("bad","No disponible", "Ese nombre ya está <b>reservado</b> (en este demo). Prueba una sugerencia.");
+          renderSuggestions(makeSuggestions(handle));
+          return;
+        }
+
+        // blocked
+        if (APP.blocked.has(handle)) {
+          setBusy(false);
+          setStatus("bad","No disponible", "Ese nombre está <b>restringido</b>. Prueba una sugerencia.");
+          renderSuggestions(makeSuggestions(handle));
+          return;
+        }
+
+        // premium-ish “taken” for very short names (adds realism)
+        if (handle.length <= 4 && (hashStr(handle) % 3 === 0)) {
+          setBusy(false);
+          setStatus("bad","Nombre premium ocupado", "Los nombres muy cortos suelen estar tomados. Prueba una variante.");
+          renderSuggestions(makeSuggestions(handle));
+          return;
+        }
+
+        // deterministic random availability
+        const h = hashStr(handle);
+        const available = (h % 7) !== 0; // ~85% available
+        setBusy(false);
+
+        const url = makeUrl(handle);
+        if (!available) {
+          setStatus("bad","No disponible", "Alguien lo tomó recientemente. Te sugiero alternativas.");
+          renderSuggestions(makeSuggestions(handle));
+          return;
+        }
+
+        lastCheck = { handle, available:true, reason:"ok", url };
+        setStatus("ok","Disponible ✅", `Perfecto. Tu URL será <span class="mono">${url}</span>`);
+        btnReserve.disabled = false;
+        btnCopy.disabled = false;
+        showToast("Disponible. ¡Resérvalo!");
       }
 
-      setup();
-      addEventListener("resize", () => setup(), { passive:true });
-      requestAnimationFrame(frame);
+      function reserveNow() {
+        if (!lastCheck?.available) return;
+
+        const handle = lastCheck.handle;
+        if (isTakenLocally(handle)) {
+          setStatus("bad","Ups…", "Acaba de quedar reservado. Vuelve a verificar.");
+          btnReserve.disabled = true;
+          return;
+        }
+
+        const code = genCode(handle);
+        const items = loadReservations();
+
+        items.unshift({
+          handle,
+          code,
+          createdAt: now(),
+          expiresAt: now() + APP.ttlMs
+        });
+
+        saveReservations(items);
+        renderList();
+
+        setStatus("ok","Reserva confirmada 🎉", `Te lo guardamos: <span class="mono">${makeUrl(handle)}</span><br>Folio: <span class="mono">${code}</span>`);
+        btnReserve.disabled = true;
+        showToast("Reserva creada ✅");
+      }
+
+      // ---------------- Events ----------------
+      btnCheck.addEventListener("click", checkAvailability);
+
+      btnReserve.addEventListener("click", () => {
+        // Fake “processing” feel
+        btnReserve.disabled = true;
+        showToast("Procesando…");
+        setTimeout(() => reserveNow(), 350 + Math.random() * 450);
+      });
+
+      btnCopy.addEventListener("click", async () => {
+        const handle = normalize(input.value);
+        const v = validate(handle);
+        if (!v.ok) { showToast("Primero escribe un nombre válido"); return; }
+        await safeCopy(makeUrl(handle));
+        showToast("URL copiada ✅");
+      });
+
+      input.addEventListener("input", () => {
+        const handle = normalize(input.value);
+        const v = validate(handle);
+        lastCheck = null;
+        btnReserve.disabled = true;
+        btnCopy.disabled = validate(handle).ok ? false : true;
+        renderSuggestions([]);
+        if (!handle) setStatus("warn","Listo para verificar","Escribe un nombre y presiona <b>Verificar</b>.");
+        else if (!v.ok) setStatus("bad","Nombre inválido", v.msg);
+        else setStatus("warn","Formato correcto", "Pulsa <b>Verificar</b> para confirmar disponibilidad.");
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") checkAvailability();
+      });
+
+      // Init
+      renderList();
+      setStatus("warn","Listo para verificar","Escribe un nombre y presiona <b>Verificar</b>.");
+      input.focus();
+
+      // Refresh list countdown (light)
+      setInterval(() => renderList(), 30_000);
     })();
   </script>
 </body>
